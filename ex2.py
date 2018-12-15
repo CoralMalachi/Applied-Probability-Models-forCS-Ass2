@@ -8,6 +8,8 @@ import math
 VOCABULARY_SIZE = 300000
 
 
+
+
 def word_count(words_dict, input_word):
     """
     Returns and number of appearances of given word
@@ -51,6 +53,9 @@ def find_best_lamda(text_words, words_dict, corpus_size, lamda_interval):
 
     return best_lamda, min_preplexity
 
+def compute_probability_Heldout(word,train_dict,m_held_out_set,dict_T, dict_N):
+    string_r = str(train_dict.get(word, 0))
+    return dict_T[string_r] / float(len(m_held_out_set) * dict_N[string_r])
 
 def main(dev_file, test_file, input_word, output_file):
     output_fd = open(output_file, "w")
@@ -141,7 +146,9 @@ def main(dev_file, test_file, input_word, output_file):
         dict_T[string_r] += held_out_dict.get(word,0)
         dict_N[string_r]+= 1
 
-    # calculating N[0]
+    """
+    compute N0 - number of values X that not seen in S_T
+    """
     N_0 = VOCABULARY_SIZE
     for r in dict_N:
         N_0 -= dict_N[r]
@@ -154,8 +161,16 @@ def main(dev_file, test_file, input_word, output_file):
             dict_T['0'] += held_out_dict[word]
 
     def compute_probability_Heldout(word):
-        r_str = str(train_dict.get(word, 0))
+        string_r = str(train_dict.get(word, 0))
         return dict_T[string_r] / float(len(m_held_out_set) * dict_N[string_r])
+
+    def compute_heldout_perplexity(validate_set):
+        sum_log = 0
+        for word in validate_set:
+            probability = compute_probability_Heldout(word)
+            sum_log += math.log(probability,2)
+        sum_log /= len(validate_set)
+        return 2**(- sum_log)
 
     probability_input_word = compute_probability_Heldout(input_word)
     probability_not_seen_word = compute_probability_Heldout('unseen-word')
@@ -174,8 +189,11 @@ def main(dev_file, test_file, input_word, output_file):
     test_lidstone_preplexity = calc_lidstone_perplexity(test_data, train_words_count, train_size, best_lamda)
     output_fd.write("#Output26\t{}\n".format(test_lidstone_preplexity))
 
+
+
     # TODO: Output 27,29 koral should do
-    test_heldout_preplexity = 0  # TODO: fill this
+    test_heldout_preplexity = compute_heldout_perplexity(test_data)  # TODO: fill this
+    output_fd.write("#Output27\t{}\n".format(test_heldout_preplexity))
     output_fd.write("#Output28\t{}\n".format('L' if test_lidstone_preplexity < test_heldout_preplexity else 'H'))
 
 
