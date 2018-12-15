@@ -107,6 +107,64 @@ def main(dev_file, test_file, input_word, output_file):
 
     # TODO: Output 21-24 koral should do
 
+    half_index = len(dev_data)/2
+    m_train_set = dev_data[0:half_index]
+    m_held_out_set = dev_data[half_index:]
+
+    output_fd.write("#Output21\t{}\n".format(len(m_train_set)))
+    output_fd.write("#Output22\t{}\n".format(len(m_held_out_set)))
+
+    train_dict = {}
+    held_out_dict={}
+
+    for word in m_train_set:
+        if word not in train_dict:
+            train_dict[word] = 0
+        train_dict[word] += 1
+
+    for word in m_held_out_set:
+        if word not in held_out_dict:
+            held_out_dict[word] = 0
+        held_out_dict[word] += 1
+
+    dict_N ={}
+    dict_T = {}
+
+    for word in train_dict:
+        r = train_dict[word]
+        string_r = str(r)
+        if string_r not in dict_N:
+            dict_N[string_r]=0
+        if string_r not in dict_T:
+            dict_T[string_r]=0
+        #get dictionary - return value for given key
+        dict_T[string_r] += held_out_dict.get(word,0)
+        dict_N[string_r]+= 1
+
+    # calculating N[0]
+    N_0 = VOCABULARY_SIZE
+    for r in dict_N:
+        N_0 -= dict_N[r]
+    dict_N['0'] = N_0
+
+    # calculating T[0]
+    dict_T['0'] = 0
+    for word in held_out_dict:
+        if word not in train_dict:
+            dict_T['0'] += held_out_dict[word]
+
+    def compute_probability_Heldout(word):
+        r_str = str(train_dict.get(word, 0))
+        return dict_T[string_r] / float(len(m_held_out_set) * dict_N[string_r])
+
+    probability_input_word = compute_probability_Heldout(input_word)
+    probability_not_seen_word = compute_probability_Heldout('unseen-word')
+
+    output_fd.write("#Output23\t{}\n".format(str(probability_input_word)))
+    output_fd.write("#Output24\t{}\n".format(str(probability_not_seen_word)))
+
+
+
     with open(test_file, "r") as fd_r:
         test_data = fd_r.read()
     test_data = test_data.split('\n')[1::2]
