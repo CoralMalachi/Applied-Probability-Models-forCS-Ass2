@@ -109,8 +109,6 @@ def main(dev_file, test_file, input_word, output_file):
     output_fd.write("#Output19\t{}\n".format(best_lamda))
     output_fd.write("#Output20\t{}\n".format(best_preplexity))
 
-    # TODO: Output 21-24 koral should do
-
     half_index = len(dev_data)/2
     m_train_set = dev_data[0:half_index]
     m_held_out_set = dev_data[half_index:]
@@ -190,10 +188,20 @@ def main(dev_file, test_file, input_word, output_file):
 
 
 
-    # TODO: Output 27,29 koral should do
     test_heldout_preplexity = compute_heldout_perplexity(test_data)  # TODO: fill this
     output_fd.write("#Output27\t{}\n".format(test_heldout_preplexity))
     output_fd.write("#Output28\t{}\n".format('L' if test_lidstone_preplexity < test_heldout_preplexity else 'H'))
+
+    # TODO: output 29 missing
+
+    # Verify that sum of p is 1
+    sum = 0
+    for word in train_words_count:
+        sum += calc_lidstone(train_words_count, word, train_size, best_lamda)
+    sum += calc_lidstone(train_words_count, "unseen-word", train_size, best_lamda) *\
+           (VOCABULARY_SIZE - len(train_words_count))
+    print "sum is: " + str(sum)
+    # TODO: add sum of Heldout probabilities
 
 
 if __name__ == "__main__":
