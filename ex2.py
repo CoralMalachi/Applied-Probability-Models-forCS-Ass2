@@ -8,8 +8,6 @@ import math
 VOCABULARY_SIZE = 300000
 
 
-
-
 def word_count(words_dict, input_word):
     """
     Returns and number of appearances of given word
@@ -25,8 +23,7 @@ def calc_lidstone(words_dict, input_word, corpus_size, lamda):
     """
 
     appearances = word_count(words_dict, input_word)
-    num_of_words = len(words_dict)
-    return float(appearances + lamda) / (corpus_size + lamda * num_of_words)
+    return float(appearances + lamda) / (corpus_size + lamda * VOCABULARY_SIZE)
 
 
 def calc_lidstone_perplexity(text_words, words_dict, corpus_size, lamda):
@@ -53,9 +50,11 @@ def find_best_lamda(text_words, words_dict, corpus_size, lamda_interval):
 
     return best_lamda, min_preplexity
 
+
 def compute_probability_Heldout(word,train_dict,m_held_out_set,dict_T, dict_N):
     string_r = str(train_dict.get(word, 0))
     return dict_T[string_r] / float(len(m_held_out_set) * dict_N[string_r])
+
 
 def main(dev_file, test_file, input_word, output_file):
     output_fd = open(output_file, "w")
