@@ -1,7 +1,7 @@
 #Students	Coral_Malachi_Avishai_Zagoury	314882853_209573633
 #Output1	develop.txt
 #Output2	test.txt
-#Output3	'the'
+#Output3	honduras
 #Output4	output.txt
 #Output5	300000
 #Output6	3.33333333333e-06
@@ -9,10 +9,10 @@
 #Output8	41515
 #Output9	373633
 #Output10	18976
-#Output11	0
-#Output12	0.0
+#Output11	3
+#Output12	8.02926936325e-06
 #Output13	0.0
-#Output14	2.4774981233e-07
+#Output14	7.68024418222e-06
 #Output15	2.4774981233e-07
 #Output16	1442.53060255
 #Output17	1401.54333506
@@ -21,7 +21,7 @@
 #Output20	1390.83767148
 #Output21	207574
 #Output22	207574
-#Output23	2.05401237172e-07
+#Output23	7.57423325201e-06
 #Output24	2.05401237172e-07
 #Output25	175980
 #Output26	1500.1407479
