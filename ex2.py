@@ -8,6 +8,7 @@ import math
 VOCABULARY_SIZE = 300000
 
 
+
 def word_count(words_dict, input_word):
     """
     Returns and number of appearances of given word
@@ -25,6 +26,22 @@ def calc_lidstone(words_dict, input_word, corpus_size, lamda):
     appearances = word_count(words_dict, input_word)
     return float(appearances + lamda) / (corpus_size + lamda * VOCABULARY_SIZE)
 
+def reverse_dictionary(dic):
+    """
+
+    :param dic:
+    :return: return the reversed dictionary
+    """
+    result_dic = {}
+    for w in dic:
+        #get frequency of current word
+        frequency = dic[w]
+        #if the word is not yet in the new reversed dictionary
+        if not frequency in result_dic:
+            result_dic[frequency] = [] # each val in reverse dic is array
+        result_dic[frequency].append(w)
+    #return the reversed dictionary
+    return result_dic
 
 def calc_lidstone_perplexity(text_words, words_dict, corpus_size, lamda):
     log_sum = 0
@@ -50,15 +67,34 @@ def find_best_lamda(text_words, words_dict, corpus_size, lamda_interval):
 
     return best_lamda, min_preplexity
 
+def p_held_out(r, t_dic, t_reverse_dic, h_dic, h_size, v_size):
+    if r == 0:
+        Nr = v_size - len(t_dic)  # num of words that not in the training set
+    else:
+        Nr = len(t_reverse_dic[r])
+
+    tr = 0
+    if r == 0:
+        for word in h_dic:
+            if word not in t_dic:
+                tr += h_dic[word]
+    else:
+        for word in t_reverse_dic[r]:
+            if word in h_dic:
+                tr += h_dic[word]
+
+    return float(tr) / (Nr * h_size)
 
 def compute_probability_Heldout(word,train_dict,m_held_out_set,dict_T, dict_N):
     string_r = str(train_dict.get(word, 0))
     return dict_T[string_r] / float(len(m_held_out_set) * dict_N[string_r])
 
+def compute_p_lidstone(r, len_data, voc_size, m_lambda):
+    return float( m_lambda+r)/(len_data + voc_size * m_lambda)
 
 def main(dev_file, test_file, input_word, output_file):
     output_fd = open(output_file, "w")
-    output_fd.write("#Students\tCoral_Malachi_Avishai_Zagoury\t<314882853>_209573633\n")
+    output_fd.write("#Students\tCoral_Malachi_Avishai_Zagoury\t314882853_209573633\n")
     output_fd.write("#Output1\t{}\n".format(dev_file))
     output_fd.write("#Output2\t{}\n".format(test_file))
     output_fd.write("#Output3\t{}\n".format(input_word))
@@ -90,7 +126,7 @@ def main(dev_file, test_file, input_word, output_file):
 
     known_words_size = len(train_words_count)
     output_fd.write("#Output10\t{}\n".format(known_words_size))
-    output_fd.write("#Output11\t{}\n".format(word_count(train_words_count, input_word)))
+    output_fd.write("#Output11\t{}\n".format(word_count(train_words_count, input_word))) #TODO: check 11 - output 3/0 ?
     # Calculate MLE of a word - 0 if the word wasn't observed
     output_fd.write("#Output12\t{}\n".format(float(word_count(train_words_count, input_word)) / train_size))
     # Calculate MLE of an unseen word
@@ -194,6 +230,37 @@ def main(dev_file, test_file, input_word, output_file):
 
     # TODO: output 29 missing
 
+    training_reverse_dic = reverse_dictionary(train_dict)
+    table_29_mission = []
+    Nrt = 0
+    r = 0
+    #thw table must have 10 lines
+    while r < 10:
+
+        F_lamda = compute_p_lidstone(r, len(train_data), VOCABULARY_SIZE, best_lamda) * len(train_data)
+        #round value
+        F_lamda = round(F_lamda, 5)
+        f_h = p_held_out(r, train_dict, training_reverse_dic, held_out_dict, len(m_held_out_set), VOCABULARY_SIZE) * len(
+            m_train_set)
+        f_h = round(f_h, 5)
+        if r == 0:
+            Nrt = VOCABULARY_SIZE - len(train_dict)  # num of words that not in the training set
+        else:
+            Nrt = len(training_reverse_dic[r])
+        Nrt = round(Nrt, 5)#round value
+        tr = f_h * Nrt
+        tr = int(round(tr))#round value
+        table_29_mission.append([r, F_lamda, f_h, Nrt, tr])
+        r += 1
+
+    #output_fd.write("#Output29\t{}\n".format(table_29_mission))
+    output_fd.write("#Output29\n")
+    for m_line in table_29_mission:
+        for obj in m_line:
+            output_fd.write(str(obj))
+            output_fd.write("\t")
+        output_fd.write("\n")
+
     # Verify that sum of p is 1
     sum = 0
     for word in train_words_count:
@@ -202,6 +269,13 @@ def main(dev_file, test_file, input_word, output_file):
            (VOCABULARY_SIZE - len(train_words_count))
     print "sum is: " + str(sum)
     # TODO: add sum of Heldout probabilities
+
+    sum = 0
+    for word in train_words_count:
+        sum += compute_probability_Heldout(word)
+    sum += compute_probability_Heldout("unseen-word") * \
+           (VOCABULARY_SIZE - len(train_words_count))
+    print "sum is: " + str(sum)
 
 
 if __name__ == "__main__":
