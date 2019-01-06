@@ -15,9 +15,9 @@ def main(articles_file, topics):
     #Create the conf matrix from the best weights
     conf_matrix, clusters_with_topics, documents_in_clusters = ut.create_confusion_matrix(final_weights, articles_with_their_words_freqs,topics_list, headers_train_data)
     print conf_matrix
-    docs_with_classification = ut.assign_classifications_to_docs(clusters_with_topics,documents_in_clusters)
+    docs_with_classification = ut.add_tag_to_articles(clusters_with_topics,documents_in_clusters)
     print "\n"
-    accuracy = ut.calc_accuracy(headers_train_data, docs_with_classification)
+    accuracy = ut.compute_accuracy(headers_train_data, docs_with_classification)
     print "the accuracy is- ", accuracy
 
 if __name__ == "__main__":
