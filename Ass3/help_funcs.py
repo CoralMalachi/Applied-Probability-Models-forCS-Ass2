@@ -1,11 +1,10 @@
 from __future__ import division
-import matplotlib.pyplot as plt
+
 
 import numpy as np
-import sys
-import math
+
 from collections import Counter
-import time
+
 NUM_CLUSTERS = 9
 
 # Calculate the accuracy of the model

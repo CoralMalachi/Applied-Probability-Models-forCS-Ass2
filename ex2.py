@@ -67,23 +67,22 @@ def find_best_lamda(text_words, words_dict, corpus_size, lamda_interval):
 
     return best_lamda, min_preplexity
 
-def p_held_out(r, t_dic, t_reverse_dic, h_dic, h_size, v_size):
+def compute_heldout_p(r, input_dict, dic_in_reverse, second_dict, second_dict_len, len_vocab):
+    t_r = 0
     if r == 0:
-        Nr = v_size - len(t_dic)  # num of words that not in the training set
+        n_r = len_vocab - len(input_dict)
     else:
-        Nr = len(t_reverse_dic[r])
-
-    tr = 0
+        n_r = len(dic_in_reverse[r])
     if r == 0:
-        for word in h_dic:
-            if word not in t_dic:
-                tr += h_dic[word]
+        for word in second_dict:
+            if word not in input_dict:
+                t_r += second_dict[word]
     else:
-        for word in t_reverse_dic[r]:
-            if word in h_dic:
-                tr += h_dic[word]
-
-    return float(tr) / (Nr * h_size)
+        for word in dic_in_reverse[r]:
+            if word in second_dict:
+                t_r += second_dict[word]
+    p = float(t_r) / ( second_dict_len * n_r)
+    return p
 
 def compute_probability_Heldout(word,train_dict,m_held_out_set,dict_T, dict_N):
     string_r = str(train_dict.get(word, 0))
@@ -230,7 +229,7 @@ def main(dev_file, test_file, input_word, output_file):
 
     # TODO: output 29 missing
 
-    training_reverse_dic = reverse_dictionary(train_dict)
+    dic_in_rev = reverse_dictionary(train_dict)
     table_29_mission = []
     Nrt = 0
     r = 0
@@ -240,13 +239,13 @@ def main(dev_file, test_file, input_word, output_file):
         F_lamda = compute_p_lidstone(r, len(train_data), VOCABULARY_SIZE, best_lamda) * len(train_data)
         #round value
         F_lamda = round(F_lamda, 5)
-        f_h = p_held_out(r, train_dict, training_reverse_dic, held_out_dict, len(m_held_out_set), VOCABULARY_SIZE) * len(
+        f_h = compute_heldout_p(r, train_dict, dic_in_rev, held_out_dict, len(m_held_out_set), VOCABULARY_SIZE) * len(
             m_train_set)
         f_h = round(f_h, 5)
         if r == 0:
             Nrt = VOCABULARY_SIZE - len(train_dict)  # num of words that not in the training set
         else:
-            Nrt = len(training_reverse_dic[r])
+            Nrt = len(dic_in_rev[r])
         Nrt = round(Nrt, 5)#round value
         tr = f_h * Nrt
         tr = int(round(tr))#round value
@@ -270,6 +269,7 @@ def main(dev_file, test_file, input_word, output_file):
     print "sum is: " + str(sum)
     # TODO: add sum of Heldout probabilities
 
+    # Verify that sum of p is 1 for Heldout probabilities
     sum = 0
     for word in train_words_count:
         sum += compute_probability_Heldout(word)

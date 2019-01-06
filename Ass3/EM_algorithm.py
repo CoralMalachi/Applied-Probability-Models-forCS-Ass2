@@ -2,10 +2,9 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 import numpy as np
-import sys
+
 import math
-from collections import Counter
-import time
+
 import help_funcs as ut
 
 def calc_likelihood(m_list, z_list, k_param):
