@@ -8,7 +8,7 @@ from collections import Counter
 NUM_CLUSTERS = 9
 
 # Calculate the accuracy of the model
-def calc_accuracy(articles_headers, all_doc_with_classification):
+def compute_accuracy(articles_headers, all_doc_with_classification):
     accuracy = 0
     for doc in all_doc_with_classification:
         if doc[1] in articles_headers[doc[0]]:
@@ -17,7 +17,7 @@ def calc_accuracy(articles_headers, all_doc_with_classification):
     total_articles = len(articles_headers)
     return accuracy / total_articles
 
-def assign_classifications_to_docs(clusters_with_topics,documents_in_clusters):
+def add_tag_to_articles(clusters_with_topics,documents_in_clusters):
     docs_with_assignments = []
     for index_of_cluster in documents_in_clusters:
         for t in documents_in_clusters[index_of_cluster]:
@@ -25,10 +25,19 @@ def assign_classifications_to_docs(clusters_with_topics,documents_in_clusters):
             docs_with_assignments.append((t, classification))
     return docs_with_assignments
 
-# Will be helpful in smoothing
+
 def calc_lidstone_for_unigram(count_words, train_size, voc_size, m_lambda):
+    """
+
+    :param count_words:
+    :param train_size:
+    :param voc_size:
+    :param m_lambda:
+    :return:
+    """
     # C(X)+ LAMBDA / |S| + LAMBDA*|X|
-    return (count_words + m_lambda) / (train_size + m_lambda * voc_size)
+    p_lid = (count_words + m_lambda) / (train_size + m_lambda * voc_size)
+    return p_lid
 
 
 def create_confusion_matrix(weights, articles_with_their_words_freqs,topics_list, article_topics):

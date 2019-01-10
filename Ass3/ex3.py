@@ -14,7 +14,9 @@ def main(articles_file, topics):
     final_weights = em.em_process(articles_with_their_words_freqs, all_words_with_all_freqs, words_clusters, len(topics_list))
     #Create the conf matrix from the best weights
     conf_matrix, clusters_with_topics, documents_in_clusters = ut.create_confusion_matrix(final_weights, articles_with_their_words_freqs,topics_list, headers_train_data)
-    print conf_matrix
+    conf_matrix_descending_order = sorted(conf_matrix, key=lambda line: line[-1], reverse=True)
+    print conf_matrix_descending_order
+
     docs_with_classification = ut.add_tag_to_articles(clusters_with_topics,documents_in_clusters)
     print "\n"
     accuracy = ut.compute_accuracy(headers_train_data, docs_with_classification)
