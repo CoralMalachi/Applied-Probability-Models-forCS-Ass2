@@ -14,8 +14,16 @@ NUM_CLUSTERS = 9
 
 
 def add_tag_to_articles(clusters,articles):
+    """
+
+    :param clusters:
+    :param articles:
+    :return:
+    """
+    #set empty array to retrun
     tagged_articles = []
     for cluster_id in articles:
+        #for each article append its tag
         for x in articles[cluster_id]:
             tag = clusters[cluster_id]
             tagged_articles.append((x, tag))
@@ -28,12 +36,15 @@ def compute_accuracy(headers, articles_with_tags):
     :param articles_with_tags:
     :return: the accuracy of the model
     """
-    accuracy = 0
+
+    #count number of correct prediction
+    correct_topic = 0
     for article in articles_with_tags:
         if article[1] in headers[article[0]]:
-            accuracy += 1
+            #update count
+            correct_topic += 1
 
-    return accuracy / len(headers)
+    return correct_topic / len(headers)
 
 def compute_lidstone(c_words, train_len, vocab_len, lambda_val):
     """
@@ -62,26 +73,28 @@ def make_conf_matrix(model_w, articles_and_freq,model_topics, topics_of_cure_art
     articles_of_clusters = {}
     clusters_and_topics = {}
 
+    # save len of topics
     len_topics = len(model_topics)
+    #save len of cluster
     len_clusters = len(model_w[0].keys())
 
     #init the conf matrix
     confusion_matrix_to_return = np.zeros((len_clusters, len_topics + 1))
 
-
-    for t in articles_and_freq:
+    #for each article:
+    for article_cure in articles_and_freq:
         index_of_max = 0
-        max_w = model_w[t][0]
+        max_w = model_w[article_cure][0]
 
         for i in range(0, len_clusters):
-            if model_w[t][i] > max_w:
-                max_w = model_w[t][i]
+            if model_w[article_cure][i] > max_w:
+                max_w = model_w[article_cure][i]
                 index_of_max = i
+        #if its not in the array
         if index_of_max not in articles_of_clusters:
             articles_of_clusters[index_of_max] = []
 
-        articles_of_clusters[index_of_max].append(t)
-
+        articles_of_clusters[index_of_max].append(article_cure)
 
 
     for x in range(0, len_clusters):
@@ -89,7 +102,7 @@ def make_conf_matrix(model_w, articles_and_freq,model_topics, topics_of_cure_art
             cure_topic = model_topics[y]
             for t in articles_of_clusters[x]:
                 if cure_topic in topics_of_cure_article[t]:
-                    #update count value
+                    #update count
                     confusion_matrix_to_return[x][y] += 1
 
         confusion_matrix_to_return[x][len_topics] = len(articles_of_clusters[x])
@@ -104,13 +117,19 @@ def make_conf_matrix(model_w, articles_and_freq,model_topics, topics_of_cure_art
                 most_topic = model_topics[y]
                 most_topic_val = confusion_matrix_to_return[x][y]
         clusters_and_topics[x] = most_topic
-
+    #return results
     return confusion_matrix_to_return, clusters_and_topics, articles_of_clusters
 
 
 
 
 def divide_clusters(data):
+    """
+
+    :param data:
+    :return: clusters
+    """
+    #set empty list
     clusters = {}
     for article_index in range(0, len(data)):
         selected_cluster = (1+article_index) % NUM_CLUSTERS
