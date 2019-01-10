@@ -23,6 +23,7 @@ def plot_graph(epochs, axis_y, label):
     :return:
     """
     axis_x = [i for i in range(0, epochs)]
+
     plt.plot(axis_x, axis_y, label=label)
     plt.xlabel("epochs")
     plt.ylabel(label)
