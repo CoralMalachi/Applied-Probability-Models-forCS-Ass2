@@ -11,16 +11,24 @@ EM_THRESHOLD = 10
 K_PARAM = 10
 LAMBDA_VAL = 1.1
 
-# def plot_graph(num_of_iterations, axis_y, label_name):
-#     axis_x = [i for i in range(0, num_of_iterations)]  # number of iterations
-#     plt.plot(axis_x, axis_y, label=label_name)
-#     plt.xlabel("epochs")
-#     plt.ylabel(label_name)
-#     #plt.title("I vs L Graph")
-#     plt.xlim(0, num_of_iterations)
-#     plt.ylim(min(axis_y), max(axis_y))
-#     plt.legend(loc="lower right")
-#     plt.savefig(label_name + "2.png")
+def plot_graph(num_of_iterations, axis_y, label_name):
+    """
+    :param epochs:
+    :param axis_y:
+    :param label:
+    :return:
+    """
+    axis_x = [i for i in range(0, num_of_iterations)]  # number of iterations
+    plt.plot(axis_x, axis_y, label=label_name)
+    plt.xlabel("epochs")
+    plt.ylabel(label_name)
+    #plt.title("I vs L Graph")
+    plt.xlim(0, num_of_iterations)
+    plt.ylim(min(axis_y), max(axis_y))
+    plt.legend(loc="lower right")
+    plt.savefig(label_name + "2.png")
+
+
 
 def compute_the_likelihood(ms, zs, value_of_k):
     """
@@ -53,7 +61,7 @@ def calc_perplexity(lan_likelihood, words_set_length):
     return math.pow(2, (-1 / words_set_length * lan_likelihood))
 
 
-def em_process(articles_and_freqs, words_set, clusters_of_words, clusters_length):
+def run_em_algorithm(articles_and_freqs, words_set, clusters_of_words, clusters_length):
     """
 
     :param articles_and_freqs:
@@ -76,10 +84,10 @@ def em_process(articles_and_freqs, words_set, clusters_of_words, clusters_length
 
     perplexity_lst = []
     value_k = K_PARAM
-    lambda_val = LAMBDA_VAL
     em_thresh = EM_THRESHOLD
+    lambda_val = LAMBDA_VAL
+
     v_size = len(words_set)
-    # First we will initialize the Pik and Alpha_i for the model
     alpha, probabilities = init_probs_and_alfa(words_set, articles_and_freqs,
                                                        clusters_of_words, clusters_length, v_size,
                                                        lambda_val)
@@ -256,7 +264,7 @@ def EM_algorithm_m_step(model_weights, articles, words_set, clusters_length, val
             for t in articles:
                 if word in articles[t] and model_weights[t][y] != 0:
                     m_numerator += model_weights[t][y] * articles[t][word]
-            probs[word][y] = ut.calc_lidstone_for_unigram(m_numerator, denominate_lst[y], vocab_len, value_of_lambda)
+            probs[word][y] = ut.compute_lidstone(m_numerator, denominate_lst[y], vocab_len, value_of_lambda)
 
 
     for i in range(0, clusters_length):

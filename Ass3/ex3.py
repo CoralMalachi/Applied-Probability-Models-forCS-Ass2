@@ -4,18 +4,18 @@ import help_funcs as ut
 import EM_algorithm as em
 
 def main(articles_file, topics):
-    headers_train_data, articles_train_data, all_words_with_all_freqs, articles_with_their_words_freqs = ut.create_train_data(
+    headers_train_data, articles_train_data, all_words_with_all_freqs, articles_with_their_words_freqs = ut.make_train_set(
             articles_file)
-    topics_list = ut.get_topics(topics)
-    words_clusters = ut.split_into_clusters(articles_train_data)
+    topics_list = ut.get_the_topics_lst(topics)
+    words_clusters = ut.divide_clusters(articles_train_data)
 
     # Run the em algorithm to find the best wti for all docs according to the train data with the specific parameters
     # we gave
-    final_weights = em.em_process(articles_with_their_words_freqs, all_words_with_all_freqs, words_clusters, len(topics_list))
+    final_weights = em.run_em_algorithm(articles_with_their_words_freqs, all_words_with_all_freqs, words_clusters, len(topics_list))
     #Create the conf matrix from the best weights
-    conf_matrix, clusters_with_topics, documents_in_clusters = ut.create_confusion_matrix(final_weights, articles_with_their_words_freqs,topics_list, headers_train_data)
-    conf_matrix_descending_order = sorted(conf_matrix, key=lambda line: line[-1], reverse=True)
-    print conf_matrix_descending_order
+    conf_matrix, clusters_with_topics, documents_in_clusters = ut.make_conf_matrix(final_weights, articles_with_their_words_freqs,topics_list, headers_train_data)
+    # conf_matrix_descending_order = sorted(conf_matrix, key=lambda line: line[-1], reverse=True)
+    print conf_matrix
 
     docs_with_classification = ut.add_tag_to_articles(clusters_with_topics,documents_in_clusters)
     print "\n"

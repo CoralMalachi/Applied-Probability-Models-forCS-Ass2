@@ -6,82 +6,124 @@ import numpy as np
 from collections import Counter
 
 NUM_CLUSTERS = 9
+# def add_tag_to_articles(clusters_with_topics,documents_in_clusters):
+#     docs_with_assignments = []
+#     for index_of_cluster in documents_in_clusters:
+#         for t in documents_in_clusters[index_of_cluster]:
+#             classification = clusters_with_topics[index_of_cluster]
+#             docs_with_assignments.append((t, classification))
+#     return docs_with_assignments
 
-# Calculate the accuracy of the model
-def compute_accuracy(articles_headers, all_doc_with_classification):
+
+def add_tag_to_articles(clusters,articles):
+    tagged_articles = []
+    for cluster_id in articles:
+        for x in articles[cluster_id]:
+            tag = clusters[cluster_id]
+            tagged_articles.append((x, tag))
+    return tagged_articles
+
+def compute_accuracy(headers, articles_with_tags):
+    """
+
+    :param headers:
+    :param articles_with_tags:
+    :return: the accuracy of the model
+    """
     accuracy = 0
-    for doc in all_doc_with_classification:
-        if doc[1] in articles_headers[doc[0]]:
+    for article in articles_with_tags:
+        if article[1] in headers[article[0]]:
             accuracy += 1
 
-    total_articles = len(articles_headers)
-    return accuracy / total_articles
+    return accuracy / len(headers)
 
-def add_tag_to_articles(clusters_with_topics,documents_in_clusters):
-    docs_with_assignments = []
-    for index_of_cluster in documents_in_clusters:
-        for t in documents_in_clusters[index_of_cluster]:
-            classification = clusters_with_topics[index_of_cluster]
-            docs_with_assignments.append((t, classification))
-    return docs_with_assignments
-
-
-def calc_lidstone_for_unigram(count_words, train_size, voc_size, m_lambda):
+def compute_lidstone(c_words, train_len, vocab_len, lambda_val):
     """
 
-    :param count_words:
-    :param train_size:
-    :param voc_size:
-    :param m_lambda:
+    :param c_words:
+    :param train_len:
+    :param vocab_len:
+    :param lambda_val:
     :return:
     """
-    # C(X)+ LAMBDA / |S| + LAMBDA*|X|
-    p_lid = (count_words + m_lambda) / (train_size + m_lambda * voc_size)
+    p_lid = (c_words + lambda_val) / (train_len + lambda_val * vocab_len)
     return p_lid
 
+# def calc_lidstone_for_unigram(count_words, train_size, voc_size, m_lambda):
+#     """
+#
+#     :param count_words:
+#     :param train_size:
+#     :param voc_size:
+#     :param m_lambda:
+#     :return:
+#     """
+#     # C(X)+ LAMBDA / |S| + LAMBDA*|X|
+#     p_lid = (count_words + m_lambda) / (train_size + m_lambda * voc_size)
+#     return p_lid
 
-def create_confusion_matrix(weights, articles_with_their_words_freqs,topics_list, article_topics):
-    documents_in_clusters = {}
 
-    number_of_topics = len(topics_list)
-    number_of_clusters = len(weights[0].keys())
+def make_conf_matrix(model_w, articles_and_freq,model_topics, topics_of_cure_article):
+    """
 
-    # Set each cluster with it's corresponding cluster by wti
-    for t in articles_with_their_words_freqs:
-        max_weights = weights[t][0]
-        selected_index = 0
-        for i in range(0, number_of_clusters):
-            if weights[t][i] > max_weights:
-                max_weights = weights[t][i]
-                selected_index = i
-        if selected_index not in documents_in_clusters:
-            documents_in_clusters[selected_index] = []
-        documents_in_clusters[selected_index].append(t)
+    :param model_w:
+    :param articles_and_freq:
+    :param model_topics:
+    :param topics_of_cure_article:
+    :return:
+    """
+    articles_of_clusters = {}
+    clusters_and_topics = {}
 
-    # Create the confusion matrix
-    conf_matrix = np.zeros((number_of_clusters, number_of_topics + 1))
-    for row in range(0, number_of_clusters):
-        for col in range(0, number_of_topics):
-            current_topic = topics_list[col]
-            for t in documents_in_clusters[row]:
-                if current_topic in article_topics[t]:
-                    conf_matrix[row][col] += 1
-        # Number of articles in the cluster
-        conf_matrix[row][number_of_topics] = len(documents_in_clusters[row])
+    len_topics = len(model_topics)
+    len_clusters = len(model_w[0].keys())
 
-    clusters_with_topics = {}
-    for row in range(0, number_of_clusters):
-        dominant_topic = 0
-        dominant_topic_val = 0
-        for col in range(0, number_of_topics):
-            if conf_matrix[row][col] > dominant_topic_val:
-                dominant_topic = topics_list[col]
-                dominant_topic_val = conf_matrix[row][col]
-        clusters_with_topics[row] = dominant_topic
+    #init the conf matrix
+    confusion_matrix_to_return = np.zeros((len_clusters, len_topics + 1))
 
-    return conf_matrix, clusters_with_topics, documents_in_clusters
 
-def split_into_clusters(data):
+    for t in articles_and_freq:
+        index_of_max = 0
+        max_w = model_w[t][0]
+
+        for i in range(0, len_clusters):
+            if model_w[t][i] > max_w:
+                max_w = model_w[t][i]
+                index_of_max = i
+        if index_of_max not in articles_of_clusters:
+            articles_of_clusters[index_of_max] = []
+
+        articles_of_clusters[index_of_max].append(t)
+
+
+
+    for x in range(0, len_clusters):
+        for y in range(0, len_topics):
+            cure_topic = model_topics[y]
+            for t in articles_of_clusters[x]:
+                if cure_topic in topics_of_cure_article[t]:
+                    #update count value
+                    confusion_matrix_to_return[x][y] += 1
+
+        confusion_matrix_to_return[x][len_topics] = len(articles_of_clusters[x])
+
+
+    for x in range(0, len_clusters):
+        most_topic_val = 0
+        most_topic = 0
+
+        for y in range(0, len_topics):
+            if confusion_matrix_to_return[x][y] > most_topic_val:
+                most_topic = model_topics[y]
+                most_topic_val = confusion_matrix_to_return[x][y]
+        clusters_and_topics[x] = most_topic
+
+    return confusion_matrix_to_return, clusters_and_topics, articles_of_clusters
+
+
+
+
+def divide_clusters(data):
     clusters = {}
     for article_index in range(0, len(data)):
         selected_cluster = (1+article_index) % NUM_CLUSTERS
@@ -94,7 +136,7 @@ def split_into_clusters(data):
     return clusters
 
 
-def get_topics(topicstxt):
+def get_the_topics_lst(topicstxt):
     """
 
     :param topicstxt:
@@ -106,42 +148,46 @@ def get_topics(topicstxt):
             list_of_topics.append(row.strip())
     return list_of_topics
 
-def create_train_data(train_file):
+def make_train_set(train_file):
     """
 
     :param train_file:
     :return:
     """
-    headers_train_data = {}  # holds all articles' headers
-    header_id = 0  # holds an id that represent a key which connect between headers dic and the articles dic
-    article_id = 0
-    articles_train_data = {}  # holds the articles
-    all_words_with_counter = {}
+
+    """
+    We want to use only words that appeared more then 3 times
+    """
+    headers_all_docs = {}  # holds all articles' headers
+    index_of_header = 0  # holds an id that represent a key which connect between headers dic and the articles dic
+    index_of_article = 0
+    all_articles = {}  # holds the articles
+    words_set_count = {}
 
     with open(train_file) as f:
-        for line in f:
-            splited_line = line.strip().split(' ')
-            if len((splited_line[0].split('\t'))) > 1:  # note header
-                headers_train_data[header_id] = splited_line[0].replace("<", "").replace(">", "").split("\t")
-                header_id += 1
+        for row in f:
+            divided_row = row.strip().split(' ')
+            if len((divided_row[0].split('\t'))) > 1:  # note header
+                headers_all_docs[index_of_header] = divided_row[0].replace("<", "").replace(">", "").split("\t")
+                index_of_header += 1
             else:  # an article
-                article_content = splited_line
-                articles_train_data[article_id] = article_content
-                article_id += 1
+                doc_content = divided_row
+                all_articles[index_of_article] = doc_content
+                index_of_article += 1
 
-                for word in article_content:
-                    if word not in all_words_with_counter:
-                        all_words_with_counter.setdefault(word, 1)
+                for word in doc_content:
+                    if word not in words_set_count:
+                        words_set_count.setdefault(word, 1)
                     else:
-                        all_words_with_counter[word] += 1
+                        words_set_count[word] += 1
 
-    # We want to use only words that appeared more then 3 times
-    relevant_words_with_freqs = clean_rare_words(all_words_with_counter)
-    relevant_articles_train_data = clean_rare_words_train_data(relevant_words_with_freqs, articles_train_data)
-    article_train_data_with_freq = get_words_freq_for_article(relevant_articles_train_data)
-    return headers_train_data, relevant_articles_train_data, relevant_words_with_freqs, article_train_data_with_freq
 
-def get_words_freq_for_article(articles_train):
+    words_with_freqs_more_than_three = delete_rare_words(words_set_count)
+    relevant_articles_train_data = delete_rare_words_from_train(words_with_freqs_more_than_three, all_articles)
+    article_train_data_with_freq = words_count_for_article(relevant_articles_train_data)
+    return headers_all_docs, relevant_articles_train_data, words_with_freqs_more_than_three, article_train_data_with_freq
+
+def words_count_for_article(articles_train):
     """
 
     :param articles_train:
@@ -155,7 +201,7 @@ def get_words_freq_for_article(articles_train):
     return count_each_article_words
 
 
-def clean_rare_words_train_data(words_lst_not_rare, train_articles):
+def delete_rare_words_from_train(words_lst_not_rare, train_articles):
     """
 
     :param words_lst_not_rare:
@@ -175,7 +221,7 @@ def clean_rare_words_train_data(words_lst_not_rare, train_articles):
     return articles_train_after_del_rare_words
 
 
-def clean_rare_words(list_words_by_frequency):
+def delete_rare_words(list_words_by_frequency):
     """
     delete_rare_words
     Time and place complexity - In order to reduce time and place complexity you should
