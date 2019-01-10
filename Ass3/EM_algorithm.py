@@ -116,7 +116,7 @@ def run_em_algorithm(articles_and_freqs, words_set, clusters_of_words, clusters_
         perplexity_lst.append(compute_current_perplexity)
         iter_index += 1
 
-    # Create the graphs of the likelihood and perplexity per iter_index
+
     # plot_graph(iter_index, likelihood_lst, "likelihood")
     # plot_graph(iter_index, perplexity_lst, "perplexity")
 
