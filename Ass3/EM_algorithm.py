@@ -22,11 +22,11 @@ def plot_graph(num_of_iterations, axis_y, label_name):
     :param label:
     :return:
     """
-    axis_x = [i for i in range(0, num_of_iterations)]  # number of iterations
+    axis_x = [i for i in range(0, num_of_iterations)]
     plt.plot(axis_x, axis_y, label=label_name)
     plt.xlabel("epochs")
     plt.ylabel(label_name)
-    #plt.title("I vs L Graph")
+
     plt.xlim(0, num_of_iterations)
     plt.ylim(min(axis_y), max(axis_y))
     plt.legend(loc="lower right")
