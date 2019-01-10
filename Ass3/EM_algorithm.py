@@ -6,90 +6,10 @@ import numpy as np
 import math
 
 import help_funcs as ut
-
-def calc_likelihood(m_list, z_list, k_param):
-    print('likelihood')
-    len_of_m_list = len(m_list)
-    likelihood = 0
-    for t in range(len_of_m_list):
-        sum_zi_e = 0
-        curr_zi_len = len(z_list[t])
-        for i in range(0, curr_zi_len):
-            curr_zi_m = z_list[t][i] - m_list[t]
-            if curr_zi_m >= (-1.0) * k_param:
-                sum_zi_e += math.exp(curr_zi_m)
-        likelihood += m_list[t] + np.log(sum_zi_e)
-    return likelihood
-
-
-def calc_initial_alpha_and_prob(relevant_words_with_freqs, articles_with_their_freq, clusters_of_articles, number_of_clusters,
-                                voc_size, lambda_val):
-
-    weights = {}
-    # Initialize the weights by the initial clusters - if the doc in the cluster - set the weight to 1, else - set to 0
-    for i, doc_list in clusters_of_articles.iteritems():
-        for t in doc_list:
-            weights[t] = {}
-            weights[t][i-1] = 1
-            for m in range(0, number_of_clusters):
-                if m not in weights[t]:
-                    weights[t][m] = 0
-
-    # Initialize the alpha and probs like in m step
-    alpha, probabilities = m_step(weights, articles_with_their_freq, relevant_words_with_freqs, number_of_clusters, lambda_val, voc_size)
-    return alpha, probabilities
-
-
-# Calculate perplexity by the given formula of th exercise
-def calc_perplexity(lan_likelihood, number_of_words):
-    return math.pow(2, (-1 / number_of_words * lan_likelihood))
-
-
-def em_process(articles_with_their_words_freqs, all_words_with_all_freq, words_clusters, number_of_clusters):
-    k_param = 10
-    lambda_val = 1.1
-    em_threshold = 10
-    v_size = len(all_words_with_all_freq)
-    # First we will initialize the Pik and Alpha_i for the model
-    alpha, probabilities = calc_initial_alpha_and_prob(all_words_with_all_freq, articles_with_their_words_freqs,
-                                                       words_clusters, number_of_clusters, v_size,
-                                                       lambda_val)
-
-    likelihood_array = []
-    perplexity_array = []
-    # Initial value for the algorithm to continue running
-    prev_likelihood = -10000101
-    curr_likelihood = -10000000
-    epoch = 0
-    number_of_words = sum(all_words_with_all_freq.values())
-    # The em will continue running until the current calculated likelihood is smaller from the previous calculated
-    # likelihood
-    while curr_likelihood - prev_likelihood > em_threshold:
-        # In the e-step the algorithm calculates the weights of each document to be in a cluster
-        # And returns them and the list of z and m (for the likelihood)
-        w, z_list, m_list = e_step(all_words_with_all_freq, articles_with_their_words_freqs, alpha, probabilities,
-                                   number_of_clusters, k_param)
-        # In the m-step the algorithm calculates the alphas and probs according to the givem weight values
-        alpha, probabilities = m_step(w, articles_with_their_words_freqs, all_words_with_all_freq, number_of_clusters,
-                                      lambda_val, v_size)
-        prev_likelihood = curr_likelihood
-        # Calc the lan likelihood of the model
-        curr_likelihood = calc_likelihood(m_list, z_list, k_param)
-        print curr_likelihood
-        # Calc the model's perplexity
-        curr_perplexity = calc_perplexity(curr_likelihood, number_of_words)
-
-        likelihood_array.append(curr_likelihood)
-        perplexity_array.append(curr_perplexity)
-        epoch += 1
-
-    # Create the graphs of the likelihood and perplexity per epoch
-    # plot_graph(epoch, likelihood_array, "likelihood")
-    # plot_graph(epoch, perplexity_array, "perplexity")
-
-    # Return the final weights
-    return w
-
+MODEL_THRESHOLD = 0.000001
+EM_THRESHOLD = 10
+K_PARAM = 10
+LAMBDA_VAL = 1.1
 
 # def plot_graph(num_of_iterations, axis_y, label_name):
 #     axis_x = [i for i in range(0, num_of_iterations)]  # number of iterations
@@ -102,78 +22,252 @@ def em_process(articles_with_their_words_freqs, all_words_with_all_freq, words_c
 #     plt.legend(loc="lower right")
 #     plt.savefig(label_name + "2.png")
 
+def compute_the_likelihood(ms, zs, value_of_k):
+    """
 
-def e_step(all_relevant_words, articles_with_their_words_freqs, alpha, probabilities, number_of_clusters, k_param):
+    :param ms:
+    :param zs:
+    :param value_of_k:
+    :return:likelihood
+    """
+    print "here"
+
+    cure_likelihood = 0
+    for t in range(len(ms)):
+        sum_of_zs_e = 0
+
+        for i in range(0, len(zs[t])):
+            curr_zi_m = zs[t][i] - ms[t]
+            if curr_zi_m >= (-1.0) * value_of_k:
+                sum_of_zs_e += math.exp(curr_zi_m)
+        log_sum = np.log(sum_of_zs_e)
+        cure_likelihood += log_sum + ms[t]
+    return cure_likelihood
+
+
+
+
+
+# Calculate perplexity by the given formula of th exercise
+def calc_perplexity(lan_likelihood, words_set_length):
+    return math.pow(2, (-1 / words_set_length * lan_likelihood))
+
+
+def em_process(articles_and_freqs, words_set, clusters_of_words, clusters_length):
+    """
+
+    :param articles_and_freqs:
+    :param words_set:
+    :param clusters_of_words:
+    :param clusters_length:
+    :return:final weights
+    """
+
+    """
+        according to Underflow Scaling and Smoothing in EM article,
+        The em algorithm continue running as long as the current calculated likelihood is bigger than the previous likelihood
+    """
+    likelihood_lst = []
+    iter_index = 0
+    #init likelihood vals
+    current_val_of_likelihood = -10000000
+    previous_val_of_likelihood = -10000101
+
+
+    perplexity_lst = []
+    value_k = K_PARAM
+    lambda_val = LAMBDA_VAL
+    em_thresh = EM_THRESHOLD
+    v_size = len(words_set)
+    # First we will initialize the Pik and Alpha_i for the model
+    alpha, probabilities = init_probs_and_alfa(words_set, articles_and_freqs,
+                                                       clusters_of_words, clusters_length, v_size,
+                                                       lambda_val)
+
+
+    words_set_length = sum(words_set.values())
+
+    while current_val_of_likelihood - previous_val_of_likelihood > em_thresh:
+
+        w, zs, ms = EM_algorithm_e_step(articles_and_freqs, alpha, probabilities,clusters_length, value_k)
+
+        alpha, probabilities = EM_algorithm_m_step(w, articles_and_freqs, words_set, clusters_length,
+                                      lambda_val, v_size)
+        previous_val_of_likelihood = current_val_of_likelihood
+
+        current_val_of_likelihood = compute_the_likelihood(ms, zs, value_k)
+        print current_val_of_likelihood
+
+        compute_current_perplexity = calc_perplexity(current_val_of_likelihood, words_set_length)
+
+        likelihood_lst.append(current_val_of_likelihood)
+        perplexity_lst.append(compute_current_perplexity)
+        iter_index += 1
+
+    # Create the graphs of the likelihood and perplexity per iter_index
+    # plot_graph(iter_index, likelihood_lst, "likelihood")
+    # plot_graph(iter_index, perplexity_lst, "perplexity")
+
+
+    return w
+
+
+def init_probs_and_alfa(words_set, articles, docs_clusters, clusters_length,
+                                vocab_len, value_of_lambda):
+    """
+
+    :param words_set:
+    :param articles:
+    :param docs_clusters:
+    :param clusters_length:
+    :param vocab_len:
+    :param value_of_lambda:
+    :return:
+    """
+    """
+     according to Underflow Scaling and Smoothing in EM article,we need
+      to init the weights by the initial clusters
+      it means that if the article in the cluster  
+      the weight is equal to 1,
+      else the weight is equal to 0
+      in addition we need to init  alpha and probs like in m step
+    """
+    #init
+    lst_of_weights = {}
+
+    for i, lst_of_articles in docs_clusters.iteritems():
+        for article_cure in lst_of_articles:
+            lst_of_weights[article_cure] = {}
+            lst_of_weights[article_cure][i-1] = 1
+            for x in range(0, clusters_length):
+                if x not in lst_of_weights[article_cure]:
+                    lst_of_weights[article_cure][x] = 0
+
+
+    # alfa, probs = EM_algorithm_m_step(lst_of_weights, articles, words_set, clusters_length, value_of_lambda, vocab_len)
+    return EM_algorithm_m_step(lst_of_weights, articles, words_set, clusters_length, value_of_lambda, vocab_len)
+
+
+def EM_algorithm_e_step(docs, value_of_alpha, probs, clusters_length, value_of_k):
+    """
+    :param words_set:
+    :param docs:
+    :param value_of_alpha:
+    :param probs:
+    :param clusters_length:
+    :param value_of_k:
+    :return:w, z_values, m_vals
+    """
+    """
+    Define zi to be the log of the numerator of wti  
+    Now we have various e^zi which are unstable. To solve this we define: m = maxi(zi)
+    Function Action:
+    1.  For each doc in our train data we are going  to compute
+        the possibility to belong to clusters
+    2.  then we compute the z array for the current document
+    """
+    z_values = []
     w = {}
-    z_list = []
-    m_list = []
-    # For every document in our training set we want to calculate it's possibility to be in the clusters
-    for t, doc_with_freq in articles_with_their_words_freqs.iteritems():
+
+    m_vals = []
+
+    for t, doc_with_freq in docs.iteritems():
         w[t] = {}
-        # Calculate the z array (for every cluster there is it's own value of z) for the current doc
-        curr_z, max_zi = calc_z_values(all_relevant_words, number_of_clusters, alpha, probabilities, doc_with_freq, k_param)
-        sum_zi = 0
-        for i in range(0, number_of_clusters):
-            if curr_z[i] - max_zi < (-1.0) * k_param:
+        z_value_current_sum = 0
+        z_value, max_zi = compute_zs(clusters_length, value_of_alpha, probs, doc_with_freq)
+
+        for i in range(0, clusters_length):
+            sub = z_value[i] - max_zi
+            """
+            according to Underflow Scaling and Smoothing in EM article,
+             if sub value is less than -k we should set w value to zero
+            """
+            if sub < value_of_k *(-1.0):
                 w[t][i] = 0
             else:
-                w[t][i] = math.exp(curr_z[i] - max_zi)
-                sum_zi += w[t][i]
-        for i in range(0, number_of_clusters):
-            w[t][i] /= sum_zi
+                w[t][i] = math.exp(sub)
+                z_value_current_sum += w[t][i]
 
-        z_list.append(curr_z)
-        m_list.append(max_zi)
-    return w, z_list, m_list
+        for x in range(0, clusters_length):
+            w[t][x] /= z_value_current_sum
 
-
-# Calculate the z array for a current doc by the equation
-def calc_z_values(all_relevant_words, number_of_clusters, alpha, probabilities, curr_article_with_t, k_param):
-    z = []
-    for i in range(0, number_of_clusters):
-        sum_of_freq_ln = 0
-        for word in curr_article_with_t:
-            sum_of_freq_ln += curr_article_with_t[word] * np.log(probabilities[word][i])
-        z.append(np.log(alpha[i]) + sum_of_freq_ln)
-    max_z = max(z)
-    return z, max_z
+        #update the 2 lists with the new values
+        z_values.append(z_value)
+        m_vals.append(max_zi)
+    return w, z_values, m_vals
 
 
-def m_step(weights, articles_with_their_words_frequencies, relevant_words_with_freq, number_of_clusters, lambda_val, v_size):
+def compute_zs(clusters_length, value_of_alpha, probs, curr_doc):
+    """
+
+    :param clusters_length:
+    :param value_of_alpha:
+    :param probs:
+    :param curr_doc:
+    :return:
+    """
+    """
+    function action : according to Underflow Scaling and Smoothing in EM article,
+    we need to compute the z array for a current article by the equation
+    """
+    z_cure = []
+    for x in range(0, clusters_length):
+        sum_ln = 0
+        for word in curr_doc:
+            log_val = np.log(probs[word][x])
+            sum_ln += log_val * curr_doc[word]
+        z_to_add=np.log(value_of_alpha[x]) + sum_ln
+        z_cure.append(z_to_add)
+    # max_z = max(z_cure)
+    return z_cure, max(z_cure)
+
+
+def EM_algorithm_m_step(model_weights, articles, words_set, clusters_length, value_of_lambda, vocab_len):
+    """
+
+    :param model_weights:
+    :param articles:
+    :param words_set:
+    :param clusters_length:
+    :param value_of_lambda:
+    :param vocab_len:
+    :return:
+    """
+    """
+    function action : according to Underflow Scaling and Smoothing in EM article,
+    we need to compute the new probs for words to be in the clusters For each cluster 
+    in addition we normalize alpha to make sure its sum is 1
+    """
     print('m_step')
-    threshold = 0.000001
-    number_of_docs = len(articles_with_their_words_frequencies)
-    probabilities = {}
-    denominator = []
-    # For every cluster we want to calculate the new probs for words to be in the clusters
-    # The calculation is by the wti (the probability of the doc to be in the cluster)
-    for i in range(0, number_of_clusters):
-        denom_i = 0
-        for t in articles_with_their_words_frequencies:
-            len_of_t = sum(articles_with_their_words_frequencies[t].values())
-            denom_i += weights[t][i] * len_of_t
-        denominator.append(denom_i)
-    for word in relevant_words_with_freq:
-        probabilities[word] = {}
-        for i in range(0, number_of_clusters):
-            numerator = 0
-            for t in articles_with_their_words_frequencies:
-                if word in articles_with_their_words_frequencies[t] and weights[t][i] != 0:
-                    numerator += weights[t][i] * articles_with_their_words_frequencies[t][word]
-            probabilities[word][i] = ut.calc_lidstone_for_unigram(numerator, denominator[i], v_size, lambda_val)
+    number_articles = len(articles)
+    alpha_val = [0] * clusters_length
+    probs = {}
+    model_threshold = MODEL_THRESHOLD
+    denominate_lst = []
+    for x in range(0, clusters_length):
+        cure_den = 0
+        for m_article in articles:
+            cure_den += model_weights[m_article][x] * sum(articles[m_article].values())
+        denominate_lst.append(cure_den)
+    for word in words_set:
+        probs[word] = {}
+        for y in range(0, clusters_length):
+            m_numerator = 0
+            for t in articles:
+                if word in articles[t] and model_weights[t][y] != 0:
+                    m_numerator += model_weights[t][y] * articles[t][word]
+            probs[word][y] = ut.calc_lidstone_for_unigram(m_numerator, denominate_lst[y], vocab_len, value_of_lambda)
 
-    # If alpha is smaller then a threshold we will scale it to the threshold to not get ln(alpha) = error
 
-    alpha = [0] * number_of_clusters
-    for i in range(0, number_of_clusters):
-        for t in articles_with_their_words_frequencies:
-            alpha[i] += weights[t][i]
-        alpha[i] /= number_of_docs
-    # alpha = [sum(i) / number_of_docs for i in zip(*weights)]
-    for i in range(0, len(alpha)):
-        if alpha[i] < threshold:
-            alpha[i] = threshold
-    sum_of_alpha = sum(alpha)
-    # Normalize alpha for it to sum to 1
-    alpha = [x / sum_of_alpha for x in alpha]
-    return alpha, probabilities
+    for i in range(0, clusters_length):
+        for t in articles:
+            alpha_val[i] += model_weights[t][i]
+        alpha_val[i] /= number_articles
+
+    for i in range(0, len(alpha_val)):
+        if alpha_val[i] < model_threshold:
+            alpha_val[i] = model_threshold
+    alfa_sum = sum(alpha_val)
+
+    alpha_val = [x / alfa_sum for x in alpha_val]
+    return alpha_val, probs
