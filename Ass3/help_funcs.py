@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from __future__ import division
 
 
@@ -8,41 +7,28 @@ from collections import Counter
 
 NUM_CLUSTERS = 9
 
-
-def compute_accuracy(headers, articles_with_tags):
-    """
-
-    :param headers:
-    :param articles_with_tags:
-    :return:
-    """
+# Calculate the accuracy of the model
+def calc_accuracy(articles_headers, all_doc_with_classification):
     accuracy = 0
-    for article in articles_with_tags:
-        if article[1] in headers[article[0]]:
+    for doc in all_doc_with_classification:
+        if doc[1] in articles_headers[doc[0]]:
             accuracy += 1
-    return accuracy / len(headers)
 
-def add_tag_to_articles(clusters,articles):
-    """
+    total_articles = len(articles_headers)
+    return accuracy / total_articles
 
-    :param clusters:
-    :param articles:
-    :return:
-    """
-    tagged_articles = []
-    for cluster_id in articles:
-        for x in articles[cluster_id]:
-            tag = clusters[cluster_id]
-            tagged_articles.append((x, tag))
-    return tagged_articles
+def assign_classifications_to_docs(clusters_with_topics,documents_in_clusters):
+    docs_with_assignments = []
+    for index_of_cluster in documents_in_clusters:
+        for t in documents_in_clusters[index_of_cluster]:
+            classification = clusters_with_topics[index_of_cluster]
+            docs_with_assignments.append((t, classification))
+    return docs_with_assignments
 
-"""
-In this exercise you will easily fall into underflow. Read the “Underflow and
-Smoothing in EM” file to learn how to avoid it
-"""
-def calc_lidstone(count_words, train_len, vocab_len, lambda_val):
-
-    return (count_words + lambda_val) / (train_len + lambda_val * vocab_len)
+# Will be helpful in smoothing
+def calc_lidstone_for_unigram(count_words, train_size, voc_size, m_lambda):
+    # C(X)+ LAMBDA / |S| + LAMBDA*|X|
+    return (count_words + m_lambda) / (train_size + m_lambda * voc_size)
 
 
 def create_confusion_matrix(weights, articles_with_their_words_freqs,topics_list, article_topics):
@@ -87,11 +73,6 @@ def create_confusion_matrix(weights, articles_with_their_words_freqs,topics_list
     return conf_matrix, clusters_with_topics, documents_in_clusters
 
 def split_into_clusters(data):
-    """
-
-    :param data:
-    :return:
-    """
     clusters = {}
     for article_index in range(0, len(data)):
         selected_cluster = (1+article_index) % NUM_CLUSTERS

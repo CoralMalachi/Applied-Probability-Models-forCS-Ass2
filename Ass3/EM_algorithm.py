@@ -1,5 +1,5 @@
 from __future__ import division
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -7,26 +7,19 @@ import math
 
 import help_funcs as ut
 
-def compute_the_likelihood(m_vals, z_vals, k_val):
-    """
-
-    :param m_vals:
-    :param z_vals:
-    :param k_val:
-    :return:
-    """
-    comp_likelihood = 0
-    len_of_m_list = len(m_vals)
-
+def calc_likelihood(m_list, z_list, k_param):
+    print('likelihood')
+    len_of_m_list = len(m_list)
+    likelihood = 0
     for t in range(len_of_m_list):
         sum_zi_e = 0
-        zi_length = len(z_vals[t])
-        for i in range(0, zi_length):
-            curr_zi_m = z_vals[t][i] - m_vals[t]
-            if curr_zi_m >= k_val*(-1.0):
+        curr_zi_len = len(z_list[t])
+        for i in range(0, curr_zi_len):
+            curr_zi_m = z_list[t][i] - m_list[t]
+            if curr_zi_m >= (-1.0) * k_param:
                 sum_zi_e += math.exp(curr_zi_m)
-        comp_likelihood += np.log(sum_zi_e)+m_vals[t]
-    return comp_likelihood
+        likelihood += m_list[t] + np.log(sum_zi_e)
+    return likelihood
 
 
 def calc_initial_alpha_and_prob(relevant_words_with_freqs, articles_with_their_freq, clusters_of_articles, number_of_clusters,
@@ -48,15 +41,14 @@ def calc_initial_alpha_and_prob(relevant_words_with_freqs, articles_with_their_f
 
 
 # Calculate perplexity by the given formula of th exercise
-def compute_perplexity(lan_likelihood, number_of_words):
+def calc_perplexity(lan_likelihood, number_of_words):
     return math.pow(2, (-1 / number_of_words * lan_likelihood))
 
 
 def em_process(articles_with_their_words_freqs, all_words_with_all_freq, words_clusters, number_of_clusters):
-    em_threshold = 10
     k_param = 10
     lambda_val = 1.1
-
+    em_threshold = 10
     v_size = len(all_words_with_all_freq)
     # First we will initialize the Pik and Alpha_i for the model
     alpha, probabilities = calc_initial_alpha_and_prob(all_words_with_all_freq, articles_with_their_words_freqs,
@@ -75,49 +67,43 @@ def em_process(articles_with_their_words_freqs, all_words_with_all_freq, words_c
     while curr_likelihood - prev_likelihood > em_threshold:
         # In the e-step the algorithm calculates the weights of each document to be in a cluster
         # And returns them and the list of z and m (for the likelihood)
-        w, z_list, m_list = start_e_step(articles_with_their_words_freqs, alpha, probabilities,number_of_clusters, k_param)
+        w, z_list, m_list = e_step(all_words_with_all_freq, articles_with_their_words_freqs, alpha, probabilities,
+                                   number_of_clusters, k_param)
         # In the m-step the algorithm calculates the alphas and probs according to the givem weight values
         alpha, probabilities = m_step(w, articles_with_their_words_freqs, all_words_with_all_freq, number_of_clusters,
                                       lambda_val, v_size)
         prev_likelihood = curr_likelihood
         # Calc the lan likelihood of the model
-        curr_likelihood = compute_the_likelihood(m_list, z_list, k_param)
+        curr_likelihood = calc_likelihood(m_list, z_list, k_param)
         print curr_likelihood
         # Calc the model's perplexity
-        curr_perplexity = compute_perplexity(curr_likelihood, number_of_words)
+        curr_perplexity = calc_perplexity(curr_likelihood, number_of_words)
 
         likelihood_array.append(curr_likelihood)
         perplexity_array.append(curr_perplexity)
         epoch += 1
 
     # Create the graphs of the likelihood and perplexity per epoch
-    ploting_results_into_graph(epoch, likelihood_array, "likelihood")
-    ploting_results_into_graph(epoch, perplexity_array, "perplexity")
+    # plot_graph(epoch, likelihood_array, "likelihood")
+    # plot_graph(epoch, perplexity_array, "perplexity")
 
     # Return the final weights
     return w
 
 
-def ploting_results_into_graph(epochs, axis_y, label):
-    """
-
-    :param epochs:
-    :param axis_y:
-    :param label:
-    :return:
-    """
-    axis_x = [i for i in range(0, epochs)]  # number of iterations
-    plt.plot(axis_x, axis_y, label=label)
-    plt.xlabel("epochs")
-    plt.ylabel(label)
-    #plt.title("I vs L Graph")
-    plt.xlim(0, epochs)
-    plt.ylim(min(axis_y), max(axis_y))
-    plt.legend(loc="lower right")
-    plt.savefig(label + "2.png")
+# def plot_graph(num_of_iterations, axis_y, label_name):
+#     axis_x = [i for i in range(0, num_of_iterations)]  # number of iterations
+#     plt.plot(axis_x, axis_y, label=label_name)
+#     plt.xlabel("epochs")
+#     plt.ylabel(label_name)
+#     #plt.title("I vs L Graph")
+#     plt.xlim(0, num_of_iterations)
+#     plt.ylim(min(axis_y), max(axis_y))
+#     plt.legend(loc="lower right")
+#     plt.savefig(label_name + "2.png")
 
 
-def start_e_step(articles_with_their_words_freqs, alpha_val, probs, clusters_len, k_val):
+def e_step(all_relevant_words, articles_with_their_words_freqs, alpha, probabilities, number_of_clusters, k_param):
     w = {}
     z_list = []
     m_list = []
@@ -125,15 +111,15 @@ def start_e_step(articles_with_their_words_freqs, alpha_val, probs, clusters_len
     for t, doc_with_freq in articles_with_their_words_freqs.iteritems():
         w[t] = {}
         # Calculate the z array (for every cluster there is it's own value of z) for the current doc
-        curr_z, max_zi = calc_z_values( clusters_len, alpha_val, probs, doc_with_freq)
+        curr_z, max_zi = calc_z_values(all_relevant_words, number_of_clusters, alpha, probabilities, doc_with_freq, k_param)
         sum_zi = 0
-        for i in range(0, clusters_len):
-            if curr_z[i] - max_zi < (-1.0) * k_val:
+        for i in range(0, number_of_clusters):
+            if curr_z[i] - max_zi < (-1.0) * k_param:
                 w[t][i] = 0
             else:
                 w[t][i] = math.exp(curr_z[i] - max_zi)
                 sum_zi += w[t][i]
-        for i in range(0, clusters_len):
+        for i in range(0, number_of_clusters):
             w[t][i] /= sum_zi
 
         z_list.append(curr_z)
@@ -142,7 +128,7 @@ def start_e_step(articles_with_their_words_freqs, alpha_val, probs, clusters_len
 
 
 # Calculate the z array for a current doc by the equation
-def calc_z_values( number_of_clusters, alpha, probabilities, curr_article_with_t):
+def calc_z_values(all_relevant_words, number_of_clusters, alpha, probabilities, curr_article_with_t, k_param):
     z = []
     for i in range(0, number_of_clusters):
         sum_of_freq_ln = 0
@@ -174,7 +160,7 @@ def m_step(weights, articles_with_their_words_frequencies, relevant_words_with_f
             for t in articles_with_their_words_frequencies:
                 if word in articles_with_their_words_frequencies[t] and weights[t][i] != 0:
                     numerator += weights[t][i] * articles_with_their_words_frequencies[t][word]
-            probabilities[word][i] = ut.calc_lidstone(numerator, denominator[i], v_size, lambda_val)
+            probabilities[word][i] = ut.calc_lidstone_for_unigram(numerator, denominator[i], v_size, lambda_val)
 
     # If alpha is smaller then a threshold we will scale it to the threshold to not get ln(alpha) = error
 
