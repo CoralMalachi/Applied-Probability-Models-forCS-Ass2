@@ -3,7 +3,7 @@ Coral Malachi	314882853
 Avishai Zagoury 209573633
 '''
 from __future__ import division
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -15,22 +15,21 @@ EM_THRESHOLD = 10
 K_PARAM = 10
 LAMBDA_VAL = 1.1
 
-def plot_graph(num_of_iterations, axis_y, label_name):
+def plot_graph(epochs, axis_y, label):
     """
     :param epochs:
     :param axis_y:
     :param label:
     :return:
     """
-    axis_x = [i for i in range(0, num_of_iterations)]
-    plt.plot(axis_x, axis_y, label=label_name)
+    axis_x = [i for i in range(0, epochs)]
+    plt.plot(axis_x, axis_y, label=label)
     plt.xlabel("epochs")
-    plt.ylabel(label_name)
-
-    plt.xlim(0, num_of_iterations)
+    plt.ylabel(label)
+    plt.xlim(0, epochs)
     plt.ylim(min(axis_y), max(axis_y))
     plt.legend(loc="lower right")
-    plt.savefig(label_name + "2.png")
+    plt.savefig(label + "2.png")
 
 
 
@@ -47,7 +46,6 @@ def compute_the_likelihood(ms, zs, value_of_k):
     cure_likelihood = 0
     for t in range(len(ms)):
         sum_of_zs_e = 0
-
         for i in range(0, len(zs[t])):
             curr_zi_m = zs[t][i] - ms[t]
             if curr_zi_m >= (-1.0) * value_of_k:
@@ -60,8 +58,8 @@ def compute_the_likelihood(ms, zs, value_of_k):
 
 
 
-# Calculate perplexity by the given formula of th exercise
-def calc_perplexity(lan_likelihood, words_set_length):
+
+def compute_perp(lan_likelihood, words_set_length):
     return math.pow(2, (-1 / words_set_length * lan_likelihood))
 
 
@@ -110,7 +108,7 @@ def run_em_algorithm(articles_and_freqs, words_set, clusters_of_words, clusters_
         current_val_of_likelihood = compute_the_likelihood(ms, zs, value_k)
         print current_val_of_likelihood
 
-        compute_current_perplexity = calc_perplexity(current_val_of_likelihood, words_set_length)
+        compute_current_perplexity = compute_perp(current_val_of_likelihood, words_set_length)
 
         likelihood_lst.append(current_val_of_likelihood)
         perplexity_lst.append(compute_current_perplexity)
