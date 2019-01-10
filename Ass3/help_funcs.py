@@ -1,3 +1,7 @@
+'''
+Coral Malachi	314882853
+Avishai Zagoury 209573633
+'''
 from __future__ import division
 
 
@@ -6,13 +10,7 @@ import numpy as np
 from collections import Counter
 
 NUM_CLUSTERS = 9
-# def add_tag_to_articles(clusters_with_topics,documents_in_clusters):
-#     docs_with_assignments = []
-#     for index_of_cluster in documents_in_clusters:
-#         for t in documents_in_clusters[index_of_cluster]:
-#             classification = clusters_with_topics[index_of_cluster]
-#             docs_with_assignments.append((t, classification))
-#     return docs_with_assignments
+
 
 
 def add_tag_to_articles(clusters,articles):
@@ -49,18 +47,7 @@ def compute_lidstone(c_words, train_len, vocab_len, lambda_val):
     p_lid = (c_words + lambda_val) / (train_len + lambda_val * vocab_len)
     return p_lid
 
-# def calc_lidstone_for_unigram(count_words, train_size, voc_size, m_lambda):
-#     """
-#
-#     :param count_words:
-#     :param train_size:
-#     :param voc_size:
-#     :param m_lambda:
-#     :return:
-#     """
-#     # C(X)+ LAMBDA / |S| + LAMBDA*|X|
-#     p_lid = (count_words + m_lambda) / (train_size + m_lambda * voc_size)
-#     return p_lid
+
 
 
 def make_conf_matrix(model_w, articles_and_freq,model_topics, topics_of_cure_article):
@@ -167,7 +154,7 @@ def make_train_set(train_file):
     with open(train_file) as f:
         for row in f:
             divided_row = row.strip().split(' ')
-            if len((divided_row[0].split('\t'))) > 1:  # note header
+            if len((divided_row[0].split('\t'))) > 1:
                 headers_all_docs[index_of_header] = divided_row[0].replace("<", "").replace(">", "").split("\t")
                 index_of_header += 1
             else:  # an article
@@ -183,9 +170,9 @@ def make_train_set(train_file):
 
 
     words_with_freqs_more_than_three = delete_rare_words(words_set_count)
-    relevant_articles_train_data = delete_rare_words_from_train(words_with_freqs_more_than_three, all_articles)
-    article_train_data_with_freq = words_count_for_article(relevant_articles_train_data)
-    return headers_all_docs, relevant_articles_train_data, words_with_freqs_more_than_three, article_train_data_with_freq
+    train_aftre_del = delete_rare_words_from_train(words_with_freqs_more_than_three, all_articles)
+    train_by_freq = words_count_for_article(train_aftre_del)
+    return headers_all_docs, train_aftre_del, words_with_freqs_more_than_three, train_by_freq
 
 def words_count_for_article(articles_train):
     """

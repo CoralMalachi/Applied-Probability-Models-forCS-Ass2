@@ -1,5 +1,9 @@
+'''
+Coral Malachi	314882853
+Avishai Zagoury 209573633
+'''
 from __future__ import division
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -38,7 +42,7 @@ def compute_the_likelihood(ms, zs, value_of_k):
     :param value_of_k:
     :return:likelihood
     """
-    print "here"
+
 
     cure_likelihood = 0
     for t in range(len(ms)):
@@ -246,7 +250,7 @@ def EM_algorithm_m_step(model_weights, articles, words_set, clusters_length, val
     we need to compute the new probs for words to be in the clusters For each cluster 
     in addition we normalize alpha to make sure its sum is 1
     """
-    print('m_step')
+
     number_articles = len(articles)
     alpha_val = [0] * clusters_length
     probs = {}

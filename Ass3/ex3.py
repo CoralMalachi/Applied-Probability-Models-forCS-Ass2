@@ -1,26 +1,31 @@
+'''
+Coral Malachi	314882853
+Avishai Zagoury 209573633
+'''
 from __future__ import division
 
 import help_funcs as ut
 import EM_algorithm as em
 
 def main(articles_file, topics):
-    headers_train_data, articles_train_data, all_words_with_all_freqs, articles_with_their_words_freqs = ut.make_train_set(
+    topics_model = ut.get_the_topics_lst(topics)
+    headers, articles, words_freqs, articles_freqs = ut.make_train_set(
             articles_file)
-    topics_list = ut.get_the_topics_lst(topics)
-    words_clusters = ut.divide_clusters(articles_train_data)
 
-    # Run the em algorithm to find the best wti for all docs according to the train data with the specific parameters
-    # we gave
-    final_weights = em.run_em_algorithm(articles_with_their_words_freqs, all_words_with_all_freqs, words_clusters, len(topics_list))
-    #Create the conf matrix from the best weights
-    conf_matrix, clusters_with_topics, documents_in_clusters = ut.make_conf_matrix(final_weights, articles_with_their_words_freqs,topics_list, headers_train_data)
+    words_into_clusters = ut.divide_clusters(articles)
+
+
+    w_model = em.run_em_algorithm(articles_freqs, words_freqs, words_into_clusters, len(topics_model))
+
+    conf_matrix, clusters_and_topics, articles_of_clusters = ut.make_conf_matrix(w_model, articles_freqs,topics_model, headers)
     # conf_matrix_descending_order = sorted(conf_matrix, key=lambda line: line[-1], reverse=True)
     print conf_matrix
 
-    docs_with_classification = ut.add_tag_to_articles(clusters_with_topics,documents_in_clusters)
+    articles_by_topic = ut.add_tag_to_articles(clusters_and_topics,articles_of_clusters)
+    #print empty line
     print "\n"
-    accuracy = ut.compute_accuracy(headers_train_data, docs_with_classification)
-    print "the accuracy is- ", accuracy
+    accuracy = ut.compute_accuracy(headers, articles_by_topic)
+    print "the accuracy of our model is- ", accuracy
 
 if __name__ == "__main__":
     main("develop.txt", "topics.txt")
